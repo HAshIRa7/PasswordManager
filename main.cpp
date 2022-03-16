@@ -55,15 +55,60 @@ private:
 
 class DataBase {
 public:
-    DataBase(std::string& db_name, std::string& table_name);
+    DataBase(const std::string& db_name, const std::string& table_name);
     bool InsertPasswordItem(const PasswordItem& item); // запрос INSERT в БД
     std::vector<std::pair<std::string, std::string>> 
         SelectEmailAll(const std::string& email); // Finds all sites and apps connected to an email. Возвращает пары <url, app_name>
     std::pair<bool, std::string> FindPass(const std::string& name); // ищет пароль по name: это либо url, либо app_name
+    std::string GetDBName();
+    std::string GetTableName();
 private:
     std::string _db_name;
     std::string _table_name;
 };
+
+std::string DataBase::GetDBName() {
+    return _db_name;
+}
+
+std::string DataBase::GetTableName() {
+    return _table_name;
+}
+
+DataBase::DataBase(const std::string& db_name, const std::string& table_name) {
+    _db_name = db_name;
+    _table_name = table_name;
+}
+
+
+bool DataBase::InsertPasswordItem(const PasswordItem& item) {
+    const char* conn_info = "dbname = " + _db_name;
+    auto conn = PQconnectdb(conn_info);
+    if(PQstatus(conn) == CONNECTION_BAD) {
+        PQfinish(conn);
+        return false;
+    }
+    // формирование запроса
+    std::string req = "INSERT INTO " + _table_name + " (password, email,\
+        user_name, url, app_name) VALUES (";
+    //password | email | user_name | url | app_name
+    auto pass = item.GetPasswordItem();
+    req += "'" +  pass[PassField::PASSWORD] + "', ";
+    req += "'" +  pass[PassField::EMAIL] + "', ";
+    req += "'" +  pass[PassField::USER_NAME] + "', ";
+    req += "'" +  pass[PassField::URL] + "', ";
+    req += "'" +  pass[PassField::APP_NAME] + ");";
+
+    auto res = PQexec(conn, req.c_str());
+    if(PQresultStatus(res) != PGRES_COMMAND_OK) {
+        PQclear(res);
+        PQfinish(conn);
+        return false;
+    }
+    PQclear(res);
+    PQfinish(conn);
+    return true;
+}
 
 
 void NewPassword(DataBase& db) {
