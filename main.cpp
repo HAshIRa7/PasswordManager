@@ -5,33 +5,43 @@
 #include <algorithm>
 #include <libpq-fe.h>
 
-class Password {
-public:
-    std::string password;
-    std::string name;
+
+/*
+"INSERT INTO passwords (password, email, user_name, url, app_name) VALUES (";
+*/
+
+
+/*
+ password | email | user_name | url | app_name
+*/
+enum class PassField {
+    PASSWORD,
+    EMAIL,
+    USER_NAME,
+    URL,
+    APP_NAME
 };
 
-class InsertPasswordQuery {
+
+class PasswordItem {
 public:
-    InsertPasswordQuery();
-    InsertPasswordQuery(std::string& pass, std::string email, std::string user_name, 
+    PasswordItem(std::string password, std::string email, std::string user_name, 
         std::string url, std::string app_name) {
-        _password = pass;
+        _password = password;
         _email = email;
         _user_name = user_name;
         _url = url;
         _app_name = app_name;
     }
-
-    std::string GetInsertQuery() {
-        std::string query = "INSERT INTO passwords (password, email,\
-                         user_name, url, app_name) VALUES (";
-        query += "'" + _password + "', ";
-        query += "'" + _email + "', "; 
-        query += "'" + _user_name + "', ";
-        query += "'" + _url + "', ";
-        query += "'" + _app_name + "');";
-        return query;
+    std::map<PassField, std::string> GetPasswordItem() {
+        std::map<PassField, std::string> res = {
+            {PassField::PASSWORD, _password},
+            {PassField::EMAIL, _email},
+            {PassField::USER_NAME, _user_name},
+            {PassField::URL, _url},
+            {PassField::APP_NAME, _app_name}
+        };
+        return res;
     }
 
 private:
@@ -39,167 +49,117 @@ private:
     std::string _email;
     std::string _user_name;
     std::string _url;
-    std::string _app_name;    
+    std::string _app_name;
 };
-
 
 class PassMan {
 public:
-    bool SetPassword(const std::string& password, const std::string& name);
-    std::pair<bool, std::string> GetPassword(const std::string& name);
-    bool DelPassword(const std::string& name);
-    std::pair<std::string, std::string> 
-            ResetPassword(const std::string& name, const std::string& password);
-    std::map<std::string, std::string> GetAllPasswords();
-    bool DB_insert_pass(const InsertPasswordQuery& q);
+
 private:
-    std::map<std::string, std::string> passwords;
+    std::vector<PasswordItem> passwords;
+};
+
+class DataBase {
+public:
+    DataBase(std::string& db_name, std::string& table_name);
+    bool InsertPasswordItem(const PasswordItem& item); // запрос INSERT в БД
+    std::vector<std::pair<std::string, std::string>> 
+        SelectEmailAll(const std::string& email); // Finds all sites and apps connected to an email. Возвращает пары <url, app_name>
+    std::pair<bool, std::string> FindPass(const std::string& name); // ищет пароль по name: это либо url, либо app_name
+private:
+    std::string _db_name;
+    std::string _table_name;
 };
 
 
-std::map<std::string, std::string> PassMan::GetAllPasswords() {
-    return passwords;
-}
-
-bool PassMan::DB_insert_pass(const InsertPasswordQuery& q) {
-    const char* conninfo;
-    conninfo = "dbname = passwords";
-    auto conn = PQconnectdb(conninfo);
-    if(PQstatus(conn) == CONNECTION_BAD) {
-        std::cerr << "Connection to database failed: " << PQerrorMessage(conn) << std::endl;
-        PQfinish(conn);
-        return false;
+void NewPassword(PassMan& passman, DataBase& db) {
+    std::string password, email, user_name, url, app_name;
+    std::cout << "Enter user name: ";
+    std::cin >> user_name;
+    std::cout << std::endl;
+    std::cout << "Enter email: ";
+    std::cin >> email;
+    std::cout << std::endl;
+    std::cout << "Enter app_name: ";
+    std::cin >> app_name;
+    std::cout << std::endl;
+    std::cout << "Enter URL: ";
+    std::cin >> url;
+    std::cout << std::endl;
+    std::cout << "Enter password: ";
+    std::cin >> password;
+    std::cout << std::endl;
+    PasswordItem pass(password, email, user_name, url, app_name);
+    bool inserted = db.InsertPasswordItem(pass);
+    if(!inserted) {
+        /*
+            хорошо бы сюда прокидывать сообщение об ошибке из самой БД
+        */
+        std::cerr << "Create new password failed!" << std::endl;
+    } else {
+        std::cout << "Password successfully saved!" << std::endl;
     }
-    std::string query_str = q.GetInsertQuery();
-    auto res = PQexec(conn, query_str.c_str());
-    if(PQresultStatus(res) != PGRES_COMMAND_OK) {
-        std::cerr << "INSERT query faile: " << PQerrorMessage(conn) << std::endl;
-        PQclear(res);
-        PQfinish(conn);
-        return false;
+}
+
+
+void FindByEmail(PassMan& passman, DataBase& db) {
+    std::string email;
+    std::cout << "Enter email: ";
+    std::cin >> email;
+    auto res = db.SelectEmailAll(email); // нужно прикрутить флаг успешно ли выполнился запрос БД
+    for(const auto& item : res) {
+        std::cout << item.first << "\t" << item.second << std::endl;
     }
-    PQclear(res);
-    PQfinish(conn);
-    return true;
 }
 
+void FindPassword(PassMan& passman, DataBase& db) {
+    std::string name;
+    std::cout << "Enter url or app_name: ";
+    std::cin >> name;
+    std::cout << std::endl;
 
-std::pair<std::string, std::string>  
-        PassMan::ResetPassword(const std::string& name, const std::string& password) {
-            auto old = GetPassword(name);
-            if(!old.first) {
-                std::cerr << "Reset failed!" << std::endl;
-                return std::make_pair("", "");
-            }
-            bool added = SetPassword(name, password);
-            if(!added) {
-                std::cerr << "Set failed!" << std::endl;
-                return std::make_pair("", "");
-            }
-            return std::make_pair(old.second, password);
-}
-
-bool PassMan::DelPassword(const std::string& name) {
-    auto it = passwords.find(name);
-    if(it == end(passwords)) {
-        //std::cerr << "No password with name '" << name << "'" << std::endl;
-        return false;
+    auto res = db.FindPass(name);
+    bool found = res.first;
+    if(!found) {
+        std::cout << "No password or smth went wrong!" << std::endl;
+    } else {
+        std::cout << "Password: " << res.second << std::endl;
     }
-    passwords.erase(name);
-    return true;
 }
 
 
-bool PassMan::SetPassword(const std::string& name, const std::string& password) {
-    //bool inserted = passwords.insert(std::make_pair(name, password)).second;
-    passwords[name] = password;
-    return true;
-}
-
-std::pair<bool, std::string> PassMan::GetPassword(const std::string& name) {
-    auto it = passwords.find(name);
-    if(it == end(passwords)) {
-        // password with 'name' doesn't exist
-        return std::make_pair(false, "");
-    }
-    return std::make_pair(true, passwords[name]);
-}
-
-std::ostream& operator<<(std::ostream& os, PassMan& passman) {
-    if(passman.GetAllPasswords().empty()) {
-        os << "There are no any passwords!" << std::endl;
-        return os;
-    }
-    for(const auto& item : passman.GetAllPasswords()) {
-        os << "name: '" << item.first << "'\tpassword: '" << item.second << "'" << std::endl;
-    }
-    return os;
-}
-
-enum class Request {
-    PRINT,
-    SET,
-    RESET,
-    DEL,
-    QUIT,
-    UNKNOWN
-};
-
-
-Request GetRequestType(const std::string& s) {
-    if(s == "PRINT") {
-        return Request::PRINT;
-    } else if(s == "SET") {
-        return Request::SET;
-    } else if(s == "DEL") {
-        return Request::DEL;
-    } else if(s == "QUIT") {
-        return Request::QUIT;
-    } else if(s == "RESET") {
-        return Request::RESET;
-    }
-    return Request::UNKNOWN;
-}
-
-
-void HadleRequest(const Request& req, PassMan& passman) {
-    if(req == Request::PRINT) {
-        std::cout << passman;
-    } else if(req == Request::SET) {
-        std::string name, password;
-        std::cin >> name >> password;
-        bool added = passman.SetPassword(name, password);
-        if(!added) {
-            std::cerr << "Password add failed!" << std::endl;
-        }
-    } else if(req == Request::DEL) {
-        std::string name;
-        std::cin >> name;
-        bool deleted = passman.DelPassword(name);
-        if(!deleted) {
-            std::cerr << "Password hasn't been deleted!" << std::endl;
-        }
-    } else if(req == Request::QUIT) {
+void Menu(PassMan& passman, DataBase& db) {
+    std::cout << '-'*20 << std::endl;
+    std::cout << '-'*8 << "Menu" << '-'*8 << std::endl;
+    std::cout << "1. Create new password" << std::endl;
+    std::cout << "2. Find all sites and apps connected to an email" << std::endl;
+    std::cout << "3. Find a password for a site or app" << std::endl;
+    std::cout << "4. Exit" << std::endl;
+    std::cout << '-'*20 << std::endl;
+    std::cout << ": ";
+    std::string answer;
+    std::cin >> answer;
+    if(answer == "1") {
+        NewPassword(passman, db);
+    } else if(answer == "2") {
+        FindByEmail(passman, db);
+    } else if(answer == "3") {
+        FindPassword(passman, db);
+    } else if(answer == "4") {
         exit(0);
-    } else if(req == Request::RESET) {
-        std::string name, password;
-        std::cin >> name >> password;
-        auto res = passman.ResetPassword(name, password);
-        std::cout << "Password to "<< name << "changed from '" << res.first 
-                << "' to " << password << "'" << std::endl; 
-    } 
-    else if(req == Request::UNKNOWN){
-        std::cerr << "Unknown command!" << std::endl;
+    } else {
+        std::cout << "Choose one of the suggested options" << std::endl;
+        Menu(passman);
     }
 }
 
 
 int main() {
     PassMan passman;
+    DataBase db("passwords", "passwords");
     std::string request;
     while(true) {
-        std::cin >> request;
-        HadleRequest(GetRequestType(request), passman);
+        Menu(passman, db);
     }
     return 0;
 }
