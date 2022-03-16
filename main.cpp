@@ -56,7 +56,7 @@ private:
 class DataBase {
 public:
     DataBase(const std::string& db_name, const std::string& table_name);
-    bool InsertPasswordItem(const PasswordItem& item); // запрос INSERT в БД
+    bool InsertPasswordItem(PasswordItem& item); // запрос INSERT в БД
     std::vector<std::pair<std::string, std::string>> 
         SelectEmailAll(const std::string& email); // Finds all sites and apps connected to an email. Возвращает пары <url, app_name>
     std::pair<bool, std::string> FindPass(const std::string& name); // ищет пароль по name: это либо url, либо app_name
@@ -81,8 +81,8 @@ DataBase::DataBase(const std::string& db_name, const std::string& table_name) {
 }
 
 
-bool DataBase::InsertPasswordItem(const PasswordItem& item) {
-    const char* conn_info = "dbname = " + _db_name;
+bool DataBase::InsertPasswordItem(PasswordItem& item) {
+    const char* conn_info = "dbname = " + _db_name.c_str();
     auto conn = PQconnectdb(conn_info);
     if(PQstatus(conn) == CONNECTION_BAD) {
         PQfinish(conn);
