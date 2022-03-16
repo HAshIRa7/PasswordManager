@@ -52,12 +52,6 @@ private:
     std::string _app_name;
 };
 
-class PassMan {
-public:
-
-private:
-    std::vector<PasswordItem> passwords;
-};
 
 class DataBase {
 public:
@@ -72,7 +66,7 @@ private:
 };
 
 
-void NewPassword(PassMan& passman, DataBase& db) {
+void NewPassword(DataBase& db) {
     std::string password, email, user_name, url, app_name;
     std::cout << "Enter user name: ";
     std::cin >> user_name;
@@ -102,7 +96,7 @@ void NewPassword(PassMan& passman, DataBase& db) {
 }
 
 
-void FindByEmail(PassMan& passman, DataBase& db) {
+void FindByEmail(DataBase& db) {
     std::string email;
     std::cout << "Enter email: ";
     std::cin >> email;
@@ -112,7 +106,7 @@ void FindByEmail(PassMan& passman, DataBase& db) {
     }
 }
 
-void FindPassword(PassMan& passman, DataBase& db) {
+void FindPassword(DataBase& db) {
     std::string name;
     std::cout << "Enter url or app_name: ";
     std::cin >> name;
@@ -128,7 +122,7 @@ void FindPassword(PassMan& passman, DataBase& db) {
 }
 
 
-void Menu(PassMan& passman, DataBase& db) {
+void Menu(DataBase& db) {
     std::cout << '-'*20 << std::endl;
     std::cout << '-'*8 << "Menu" << '-'*8 << std::endl;
     std::cout << "1. Create new password" << std::endl;
@@ -140,26 +134,25 @@ void Menu(PassMan& passman, DataBase& db) {
     std::string answer;
     std::cin >> answer;
     if(answer == "1") {
-        NewPassword(passman, db);
+        NewPassword(db);
     } else if(answer == "2") {
-        FindByEmail(passman, db);
+        FindByEmail(db);
     } else if(answer == "3") {
-        FindPassword(passman, db);
+        FindPassword(db);
     } else if(answer == "4") {
         exit(0);
     } else {
         std::cout << "Choose one of the suggested options" << std::endl;
-        Menu(passman);
+        Menu(db);
     }
 }
 
 
 int main() {
-    PassMan passman;
     DataBase db("passwords", "passwords");
     std::string request;
     while(true) {
-        Menu(passman, db);
+        Menu(db);
     }
     return 0;
 }
