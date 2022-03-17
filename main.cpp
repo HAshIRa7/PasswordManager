@@ -1,16 +1,14 @@
+/*
+    g++ -Wall -Wextra main.cpp -o main.exe -lpqxx
+*/
+
 #include <iostream>
 #include <string>
 #include <vector>
 #include <map>
 #include <algorithm>
-#include <libpq-fe.h>
-
-
-/*
-"INSERT INTO passwords (password, email, user_name, url, app_name) VALUES (";
-*/
-
-
+#include <string.h>
+#include <pqxx/pqxx>
 /*
  password | email | user_name | url | app_name
 */
@@ -55,7 +53,7 @@ private:
 
 class DataBase {
 public:
-    DataBase(const std::string& db_name, const std::string& table_name);
+    DataBase(const std::string& db_name, const std::string& table_name, const std::string password, const std::string user_name);
     bool InsertPasswordItem(PasswordItem& item); // запрос INSERT в БД
     std::pair<bool, std::vector<std::pair<std::string, std::string>>>
         SelectEmailAll(const std::string& email); // Finds all sites and apps connected to an email. Возвращает пары <url, app_name>
@@ -63,6 +61,8 @@ public:
     std::string GetDBName();
     std::string GetTableName();
 private:
+    std::string _password;
+    std::string _user_name;
     std::string _db_name;
     std::string _table_name;
 };
@@ -75,39 +75,41 @@ std::string DataBase::GetTableName() {
     return _table_name;
 }
 
-DataBase::DataBase(const std::string& db_name, const std::string& table_name) {
+DataBase::DataBase(const std::string& db_name, const std::string& table_name, 
+    const std::string password, const std::string user_name) {
+    _password = password;
+    _user_name = user_name;
     _db_name = db_name;
     _table_name = table_name;
 }
 
 
 bool DataBase::InsertPasswordItem(PasswordItem& item) {
-    const std::string s = "dbname = ";
-    const char* conn_info = (s + _db_name).c_str();
-    auto conn = PQconnectdb(conn_info);
-    if(PQstatus(conn) == CONNECTION_BAD) {
-        PQfinish(conn);
-        return false;
-    }
-    // формирование запроса
-    std::string req = "INSERT INTO " + _table_name + " (password, email,\
-        user_name, url, app_name) VALUES (";
-    //password | email | user_name | url | app_name
-    auto pass = item.GetPasswordItem();
-    req += "'" +  pass[PassField::PASSWORD] + "', ";
-    req += "'" +  pass[PassField::EMAIL] + "', ";
-    req += "'" +  pass[PassField::USER_NAME] + "', ";
-    req += "'" +  pass[PassField::URL] + "', ";
-    req += "'" +  pass[PassField::APP_NAME] + ");";
+    // database connect info
+    std::stringstream ss_conn_info;
+    ss_conn_info << "dbname = " << _db_name << " user = " << _user_name << " password = " << _password;
+    std::string conn_info = ss_conn_info.str();
 
-    auto res = PQexec(conn, req.c_str());
-    if(PQresultStatus(res) != PGRES_COMMAND_OK) {
-        PQclear(res);
-        PQfinish(conn);
+    // making request
+    auto pass = item.GetPasswordItem();
+    std::stringstream ss_req;
+    ss_req << "INSERT INTO " << _table_name << " (password, email, user_name, url, app_name) VALUES ("
+        << "'" << pass[PassField::PASSWORD]     << "', " 
+        << "'" << pass[PassField::EMAIL]        << "', "
+        << "'" << pass[PassField::USER_NAME]    << "', "
+        << "'" << pass[PassField::URL]          << "', "
+        << "'" << pass[PassField::APP_NAME]     << "');";
+    std::string req = ss_req.str();
+
+    pqxx::result res;
+    try {
+        pqxx::connection C(conn_info);
+        pqxx::work w(C);
+        res = w.exec(req);
+    } catch(std::exception const& e) {
+        std::cerr << e.what() << std::endl;
         return false;
     }
-    PQclear(res);
-    PQfinish(conn);
     return true;
 }
 
@@ -198,8 +200,14 @@ void Menu(DataBase& db) {
 }
 
 
-int main() {
-    DataBase db("passwords", "passwords");
+int main(int argc, char* argv[]) {
+    // argv: db_name, table_name, user_name (database), password (database)
+    if(argc < 5) {
+        throw std::runtime_error("To few command line arguments: expected 5");
+        return 1;
+    } 
+    DataBase db(std::string(argv[1], sizeof(argv[1])), std::string(argv[2], sizeof(argv[2])), 
+        std::string(argv[3], sizeof(argv[3])), std::string(argv[4], sizeof(argv[4])));
     std::string request;
     while(true) {
         Menu(db);

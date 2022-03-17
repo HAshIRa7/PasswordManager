@@ -1,2 +1,5 @@
 *.exe
 .vscode
+test_db.cpp
+test_db2.cpp
+postgres.txt
