@@ -3,3 +3,5 @@
 test_db.cpp
 test_db2.cpp
 postgres.txt
+.vscode/settings.json
+*.o
