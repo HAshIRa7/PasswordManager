@@ -5,3 +5,4 @@ test_db2.cpp
 postgres.txt
 .vscode/settings.json
 *.o
+clipboard.cpp

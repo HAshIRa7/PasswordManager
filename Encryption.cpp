@@ -1,3 +1,7 @@
+/*
+    install: sudo apt-get install libcrypto++-dev libcrypto++-doc libcrypto++-utils
+    g++ Encryption.cpp -o Encryption.exe -lcryptopp
+*/
 #include "cryptopp/cryptlib.h"
 #include "cryptopp/rijndael.h"
 #include "cryptopp/modes.h"
