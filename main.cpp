@@ -8,6 +8,13 @@
     g++ database_manager.o password_item.o main.o -o main.exe -lpqxx
 */
 
+//#include "mainwindow.h"
+/*
+#include <QApplication>
+#include <QClipboard>
+#include <QString>
+*/
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -97,8 +104,19 @@ void Menu(DataBase& db) {
     }
 }
 
+/*
+void SetClipText(const std::string& text, QApplication& a) {
+    QClipboard* clipboard = a.clipboard();
+    clipboard->setText(QString::fromStdString(text));
+}
+*/
+
 
 int main(int argc, char* argv[]) {
+    /*
+    QApplication a(argc, argv);
+    SetClipText("Hello, motherfucker!", a);
+    */
     // argv: db_name, table_name, user_name (database), password (database)
     if(argc < 5) {
         throw std::runtime_error("To few command line arguments: expected 5");
