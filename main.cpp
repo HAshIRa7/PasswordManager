@@ -25,6 +25,7 @@
 
 #include "password_item.h"
 #include "database_manager.h"
+#include "encryption.h"
 /*
  password | email | user_name | url | app_name
 */
