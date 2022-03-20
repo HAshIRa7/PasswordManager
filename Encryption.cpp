@@ -12,13 +12,16 @@ using namespace CryptoPP;
 
 class Cipher {
 public:
-    Cipher(std::string password) { 
+    Cipher() { 
         AutoSeededRandomPool prng;  
         key  = SecByteBlock (AES::DEFAULT_KEYLENGTH);
         iv = SecByteBlock (AES::BLOCKSIZE);
         prng.GenerateBlock(key, key.size());
-        prng.GenerateBlock(iv, iv.size()); 
+        prng.GenerateBlock(iv, iv.size());  
+    }
 
+    std::string Encrypt(std::string password) {
+        std::string cipher; 
         try
         {
             CBC_Mode< AES >::Encryption e;
@@ -35,9 +38,10 @@ public:
             std::cerr << e.what() << std::endl;
             exit(1);
         }
+        return cipher;
     } 
     
-    std::string Decrypt() {
+    std::string Decrypt(std::string cipher) {
         std::string recovered;  
         try
         {
@@ -58,7 +62,7 @@ public:
         return recovered; 
     }  
 
-    void PrintCipher() {  
+    void PrintCipher(std::string cipher) {  
         HexEncoder encoder(new FileSink(std::cout));
         std::cout << "cipher text: ";
         encoder.Put((const byte*)&cipher[0], cipher.size());
@@ -76,17 +80,17 @@ public:
     ~Cipher() {} 
 private:   
     SecByteBlock key; 
-    SecByteBlock iv;  
-    std::string cipher; 
+    SecByteBlock iv;
 }; 
 
 int main()
 {
     HexEncoder encoder(new FileSink(std::cout));
     std::string password = "CBC Mode Test";  
-    Cipher cip(password); 
+    Cipher cip;  
+    std::string cipher = cip.Encrypt(password);
     cip.PrintKey(); 
-    cip.PrintCipher(); 
-    std::cout << cip.Decrypt() << std::endl;
+    cip.PrintCipher(cipher); 
+    std::cout << cip.Decrypt(cipher) << std::endl;
     return 0;
 }
