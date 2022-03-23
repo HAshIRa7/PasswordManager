@@ -55,6 +55,7 @@ int main(int argc, char *argv[])
     PassMan passman(db);
 
     for(int i = 0; i < 3; i++) {
+        cout << "________Autorisation________\n"; cout.flush();
         bool autorisation = passman.Autorisation();
         if(autorisation) {
             break;
