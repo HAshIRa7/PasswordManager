@@ -3,7 +3,8 @@
 #include <QString>
 #include <iostream>
 #include <QTextStream>
-
+#include <tuple>
+#include "autorisation.h"
 
 class PassMan {
 public:

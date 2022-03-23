@@ -1,5 +1,14 @@
 #include "password_item.h"
 
+#ifndef STREAM
+    #define STREAM
+    #include <QTextStream>
+    QTextStream cout5(stdout);
+    QTextStream cin5(stdin);
+    QTextStream cerr5(stderr);
+#endif
+
+
 PasswordItem::PasswordItem(std::string password, std::string email, std::string user_name,
         std::string url, std::string app_name) {
         _password = password;

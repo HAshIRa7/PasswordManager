@@ -14,11 +14,10 @@
 #include <unistd.h>
 #include <pqxx/pqxx>
 
-/*
+#define STREAM
 QTextStream cout(stdout);
 QTextStream cin(stdin);
-QTextStream cerr1(stderr);
-*/
+QTextStream cerr(stderr);
 
 #include "password_item.h"
 #include "database_manager.h"
@@ -26,7 +25,12 @@ QTextStream cerr1(stderr);
 #include "password_manager.h"
 #include "autorisation.h"
 //#include "cionout.h"
-
+#ifndef STREAM
+    #define STREAM
+    QTextStream cout(stdout);
+    QTextStream cin(stdin);
+    QTextStream cerr(stderr);
+#endif
 
 
 int main(int argc, char *argv[])
@@ -47,20 +51,19 @@ int main(int argc, char *argv[])
     }
 
     DataBase db(argv[1], argv[2], argv[3], argv[4]);
+    PassMan passman(db);
+
     for(int i = 0; i < 3; i++) {
-        bool autorisation = Autorisation(db);
+        bool autorisation = passman.Autorisation();
         if(autorisation) {
             break;
         }
         if(i == 2) {
-            QTextStream cout2(stdout);
-            cout2 << "All 3 attempts are spent!\n"; cout2.flush();
+            cout << "All 3 attempts are spent!\n"; cout.flush();
             return 1;
         }
     }
-    PassMan passman(db);
-    while(true) {
-        passman.Menu();
-    }
+    passman.Menu();
+
     return a.exec();
 }

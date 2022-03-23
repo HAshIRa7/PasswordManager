@@ -1,5 +1,15 @@
 #include "database_manager.h"
 
+
+#ifndef STREAM
+    #define STREAM
+    #include <QTextStream>
+    QTextStream cout2(stdout);
+    QTextStream cin2(stdin);
+    QTextStream cerr2(stderr);
+#endif
+
+    DataBase::DataBase(){}
 DataBase::DataBase(const std::string& db_name, const std::string& table_name,
     const std::string user_name, const std::string password) {
         //db_name, table_name, user_name (database), password (database)
@@ -38,7 +48,7 @@ std::pair<bool, std::string> DataBase::FindPass(const std::string& name) {
         res_p = std::make_pair(true, res[0][0].c_str());
         C.disconnect();
     } catch(const std::exception& e) {
-        std::cerr << e.what() << std::endl;
+        cerr2 << e.what() << "\n"; cerr2.flush();
         res_p.first = false;
         res_p.second = "";
         return res_p;
@@ -77,7 +87,7 @@ std::pair<bool, std::vector<std::pair<std::string, std::string>>>
         }
         C.disconnect();
     } catch(const std::exception& e) {
-        std::cerr << e.what() << std::endl;
+        cerr2 << e.what() << "\n"; cerr2.flush();
         std::vector<std::pair<std::string, std::string>> v = {std::make_pair("", "")};
         return std::make_pair(false, v);
     }
@@ -125,7 +135,7 @@ bool DataBase::InsertPasswordItem(PasswordItem& item) {
         w.commit();
         C.disconnect();
     } catch(const std::exception& e) {
-        std::cerr << e.what() << std::endl;
+        cerr2 << e.what() << "\n"; cerr2.flush();
         return false;
     }
     return true;

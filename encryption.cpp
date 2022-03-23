@@ -1,5 +1,15 @@
 #include "encryption.h"
 
+
+#ifndef STREAM
+    #define STREAM
+    #include <QTextStream>
+    QTextStream cout3(stdout);
+    QTextStream cin3(stdin);
+    QTextStream cerr3(stderr);
+#endif
+
+
 Cipher::Cipher(std::string password) {
         AutoSeededRandomPool prng;
         key  = SecByteBlock (AES::DEFAULT_KEYLENGTH);

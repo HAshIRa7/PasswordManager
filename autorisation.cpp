@@ -1,14 +1,14 @@
 #include "autorisation.h"
 
 
-/*
-QTextStream cout(stdout);
-QTextStream cin(stdin);
-QTextStream cerr(stderr);
-*/
-QTextStream cin(stdin);
-QTextStream cout(stdout);
-QTextStream cerr(stdout);
+#ifndef STREAM
+    #define STREAM
+    #include <QTextStream>
+    QTextStream cout1(stdout);
+    QTextStream cin1(stdin);
+    QTextStream cerr1(stderr);
+#endif
+
 bool TableExist(DataBase& db) {
     std::stringstream ss_req_1;
     ss_req_1 << "SELECT EXISTS (SELECT 1 FROM information_schema.columns\
@@ -21,10 +21,10 @@ bool TableExist(DataBase& db) {
         w.commit();
         C.disconnect();
     } catch(const std::exception& e) {
-        cerr << e.what() << "\n"; cerr.flush();
+        cerr1 << e.what() << "\n"; cerr1.flush();
         return false;
     }
-    return res_req_1[0][0].c_str() == "1";
+    return strcmp(res_req_1[0][0].c_str(), "t") == 0;
 }
 
 
@@ -40,7 +40,7 @@ bool CreateTable(DataBase& db) {
         w.commit();
         C.disconnect();
     } catch(const std::exception& e) {
-        cerr << e.what() << "\n"; cerr.flush();
+        cerr1 << e.what() << "\n"; cerr1.flush();
         return false;
     }
     return true;
@@ -49,7 +49,7 @@ bool CreateTable(DataBase& db) {
 std::pair<bool, std::vector<std::string>> UserExist(DataBase& db, const std::string& login) {
     // if exists, returns info: login, pass_hash, salt
     std::stringstream ss_req;
-    ss_req << "SELECT * FROM autorisation WHERE login = '" << login << "');";
+    ss_req << "SELECT * FROM autorisation WHERE login = '" << login << "';";
     pqxx::result res_req;
     try {
         pqxx::connection C(db.GetDBconnectionInfo());
@@ -58,7 +58,7 @@ std::pair<bool, std::vector<std::string>> UserExist(DataBase& db, const std::str
         w.commit();
         C.disconnect();
     } catch(const std::exception& e) {
-        cerr << e.what() << "\n"; cerr.flush();
+        cerr1 << e.what() << "\n"; cerr1.flush();
         std::vector<std::string> v = {"", "", ""};
         return std::make_pair(false, v);
     }
@@ -81,15 +81,16 @@ bool Verification(const std::string& login, const std::string& master_pass,
 }
 
 bool Registration(DataBase& db) {
+    cout1 << "\tRegistration\n"; cout1.flush();
     QString master_pass1, master_pass2, login;
-    cout << "Enter login: "; cout.flush();
-    cin >> login;
-    cout << "Enter Master password: "; cout.flush();
-    cin >> master_pass1;
-    cout << "Repeat Master password: "; cout.flush();
-    cin >> master_pass2;
+    cout1 << "Enter login: "; cout1.flush();
+    cin1 >> login;
+    cout1 << "Enter Master password: "; cout1.flush();
+    cin1 >> master_pass1;
+    cout1 << "Repeat Master password: "; cout1.flush();
+    cin1 >> master_pass2;
     if(master_pass1 != master_pass2) {
-        cout << "the entered passwords do not match!\n"; cout.flush();
+        cout1 << "the entered passwords do not match!\n"; cout1.flush();
         return false;
     }
 
@@ -109,7 +110,7 @@ bool Registration(DataBase& db) {
             w.commit();
             C.disconnect();
         } catch(const std::exception& e) {
-            cerr << e.what() << "\n"; cerr.flush();
+            cerr1 << e.what() << "\n"; cerr1.flush();
             return false;
         }
         return true;
@@ -122,10 +123,10 @@ bool Autorisation(DataBase& db) {
 
     if(TableExist(db)) {
         QString login, master_pass;
-        cout << "Login: "; cout.flush();
-        cin >> login;
-        cout << "Master password: "; cout.flush();
-        cin >> master_pass;
+        cout1 << "Login: "; cout1.flush();
+        cin1 >> login;
+        cout1 << "Master password: "; cout1.flush();
+        cin1 >> master_pass;
         auto user_info = UserExist(db, login.toStdString());
 
         if(user_info.first) {
