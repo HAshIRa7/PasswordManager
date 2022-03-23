@@ -6,3 +6,4 @@ postgres.txt
 .vscode/settings.json
 *.o
 clipboard.cpp
+test_auto.cpp
