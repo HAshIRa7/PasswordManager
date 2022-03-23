@@ -7,3 +7,4 @@ postgres.txt
 *.o
 clipboard.cpp
 test_auto.cpp
+Clipboard.pro.user
