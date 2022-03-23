@@ -117,7 +117,7 @@ void PassMan::Menu() {
     } else if(answer == "3") {
         FindPassword();
     } else if(answer == "4") {
-        exit(0);
+        return;
     } else {
         cout6 << "Choose one of the suggested options!\n";
     }
