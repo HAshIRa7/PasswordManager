@@ -35,6 +35,7 @@ QTextStream cerr(stderr);
 
 int main(int argc, char *argv[])
 {
+    //db_name, table_name, password(database), user_name
     QApplication a(argc, argv);
     MainWindow w;
     w.show();
